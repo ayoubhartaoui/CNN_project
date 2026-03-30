@@ -9,8 +9,6 @@ to the training, optimization choice, and evalutation done including **Explanato
 The MobileNetV2.ipynb contian the steps i took to train the already built CNN, this method is called transfer learning and is wieldly used in Data science
 to gain time. Again everything is included except the **Data-Scraping** already done in the CNN.ipynb. training, optimization, and Evaluation are present including the XIA steps ! 
 
-for the conclusion you will find them in the Paper, called Final_project_MLEES_Ayoub_Hartaoui ! 
-
-FInally, There is also a PowerPoint presentation of the subject. 
+Finally, for the conclusion you will find them in the Paper, called Final_project_MLEES_Ayoub_Hartaoui ! 
 
 Enjoy :) if you have question email me !
