@@ -1,0 +1,128 @@
+name: CNN Project CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - run: pip install ruff black isort
+
+      - name: ruff
+        run: ruff check src/ --output-format=github
+
+      - name: black
+        run: black --check --diff src/
+
+      - name: isort
+        run: isort --check-only --diff src/
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - run: pip install mypy tensorflow-stubs numpy
+
+      - run: mypy src/ --ignore-missing-imports --no-strict-optional
+
+  notebook-lint:
+    name: Notebook Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - run: pip install nbqa ruff nbstripout
+
+      - name: Lint notebooks with ruff via nbqa
+        run: nbqa ruff CNN.ipynb MobileNetV2.ipynb --output-format=github
+
+      - name: Check notebooks have stripped outputs
+        run: |
+          nbstripout --verify CNN.ipynb MobileNetV2.ipynb || \
+          echo "::warning::Notebooks contain outputs — run 'nbstripout *.ipynb' before committing"
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - run: pip install bandit[toml] pip-audit
+
+      - name: bandit
+        run: bandit -r src/ -ll
+
+      - name: pip-audit
+        run: pip-audit -r requirements.txt --skip-editable
+        continue-on-error: true
+
+  model-smoke-test:
+    name: Model Architecture Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install CPU-only TensorFlow (fast for CI)
+        run: pip install tensorflow-cpu numpy scikit-learn opencv-python-headless tqdm
+
+      - name: Smoke-test CNN build
+        run: |
+          cd src
+          python - <<'EOF'
+          import numpy as np, tensorflow as tf
+          from train_cnn import build_model
+          model = build_model()
+          dummy = np.zeros((2, 224, 224, 3), dtype="float32")
+          out = model.predict(dummy, verbose=0)
+          assert out.shape == (2, 1), f"Unexpected output shape: {out.shape}"
+          print("CNN smoke test passed ✓")
+          EOF
+
+      - name: Smoke-test MobileNetV2 build
+        run: |
+          cd src
+          python - <<'EOF'
+          import numpy as np, tensorflow as tf
+          from train_mobilenet import build_model
+          model = build_model(num_classes=2)
+          dummy = np.zeros((2, 224, 224, 3), dtype="float32")
+          out = model.predict(dummy, verbose=0)
+          assert out.shape == (2, 2), f"Unexpected output shape: {out.shape}"
+          print("MobileNetV2 smoke test passed ✓")
+          EOF
