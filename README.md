@@ -107,7 +107,7 @@ python src/evaluate.py
 - Preprocessing: resize to 224×224, normalize to [0, 1]
 - Augmentation (train only): rotation ±20°, horizontal flip, zoom, width/height shift
 
-### Custom CNN
+### Vanilla custom-made CNN 
 3-block convolutional encoder (32→64→128 filters) with L2 regularization (λ=0.01), 50% dropout, binary sigmoid output. Trained with class-weight balancing, early stopping (patience=5), and learning rate reduction on plateau.
 
 ### MobileNetV2 (transfer learning)
